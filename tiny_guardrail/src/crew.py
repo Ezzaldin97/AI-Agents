@@ -1,11 +1,8 @@
-from crewai import Agent, Crew, Process, Task
+from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
-
-# Uncomment the following line to use an example of a custom tool
-# from tiny_guardrail.tools.custom_tool import MyCustomTool
-
-# Check our tools documentations for more information on how to use them
-# from crewai_tools import SerperDevTool
+from src.tools.custom_tool import PIIRemovalTool, BadWordsRemovalTool
+from crewai_tools import FileReadTool, DirectoryReadTool
+import os
 
 @CrewBase
 class TinyGuardrail():
@@ -15,31 +12,24 @@ class TinyGuardrail():
 	tasks_config = 'config/tasks.yaml'
 
 	@agent
-	def researcher(self) -> Agent:
+	def guardrail(self) -> Agent:
 		return Agent(
-			config=self.agents_config['researcher'],
-			# tools=[MyCustomTool()], # Example of custom tool, loaded on the beginning of file
-			verbose=True
-		)
-
-	@agent
-	def reporting_analyst(self) -> Agent:
-		return Agent(
-			config=self.agents_config['reporting_analyst'],
+			config=self.agents_config['guardrail'],
+			llm=LLM(
+				model=f"{os.getenv('REMOTE_PROVIDER')}/{os.getenv('HF_MODEL')}", 
+				api_key=os.getenv('HF_TOKEN')
+			),
 			verbose=True
 		)
 
 	@task
-	def research_task(self) -> Task:
+	def guard_task(self) -> Task:
 		return Task(
-			config=self.tasks_config['research_task'],
-		)
-
-	@task
-	def reporting_task(self) -> Task:
-		return Task(
-			config=self.tasks_config['reporting_task'],
-			output_file='report.md'
+			config=self.tasks_config['guard_task'],
+			tools=[
+				DirectoryReadTool(), FileReadTool(),
+				PIIRemovalTool(), BadWordsRemovalTool()
+			]
 		)
 
 	@crew
@@ -50,5 +40,4 @@ class TinyGuardrail():
 			tasks=self.tasks, # Automatically created by the @task decorator
 			process=Process.sequential,
 			verbose=True,
-			# process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
 		)

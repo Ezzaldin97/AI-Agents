@@ -1,6 +1,5 @@
-def main():
-    print("Hello from tiny_guardrail!")
+from src.main import run
 
 
 if __name__ == "__main__":
-    main()
+    run()
