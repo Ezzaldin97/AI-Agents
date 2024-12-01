@@ -14,3 +14,6 @@ wheels/
 
 # notebooks
 notebooks/
+
+## another projects
+code_executor/ 
